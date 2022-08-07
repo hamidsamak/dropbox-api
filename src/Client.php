@@ -779,7 +779,7 @@ class Client
         $localFiles = $this->localFiles($localPath, $recursive);
         $remoteFiles = $this->listFolder($remotePath, true);
 
-        if (isset($remoteFiles['entries']) && empty($remoteFiles['entries']) === false) {
+        if (isset($remoteFiles['entries'])) {
             $uploads = [];
             $deletes = [];
 
