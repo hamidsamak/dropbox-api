@@ -1,14 +1,16 @@
 {
-    "name": "spatie/dropbox-api",
-    "description": "A minimal implementation of Dropbox API v2",
+    "name": "hamidsamak/dropbox-api",
+    "description": "A minimal implementation of Dropbox API v2 with syncing",
     "keywords": [
-        "spatie",
+        "hamidsamak",
         "dropbox-api",
         "dropbox",
         "api",
-        "v2"
+        "v2",
+        "sync",
+        "syncing"
     ],
-    "homepage": "https://github.com/spatie/dropbox-api",
+    "homepage": "https://github.com/hamidsamak/dropbox-api",
     "license": "MIT",
     "authors": [
         {
@@ -21,6 +23,12 @@
             "name": "Freek Van der Herten",
             "email": "freek@spatie.be",
             "homepage": "https://spatie.be",
+            "role": "Developer"
+        },
+        {
+            "name": "Hamid Samak",
+            "email": "hamidreza.samak@gmail.com",
+            "homepage": "https://hamidsamak.ir",
             "role": "Developer"
         }
     ],

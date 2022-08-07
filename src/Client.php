@@ -441,7 +441,7 @@ class Client
 
         $cursor = $this->uploadChunk(self::UPLOAD_SESSION_START, $stream, $chunkSize, null);
 
-        while (! $stream->eof()) {
+        while (!$stream->eof()) {
             $cursor = $this->uploadChunk(self::UPLOAD_SESSION_APPEND, $stream, $chunkSize, $cursor);
         }
 
@@ -601,7 +601,7 @@ class Client
 
         $path = trim($path, '/');
 
-        return ($path === '') ? '' : '/'.$path;
+        return ($path === '') ? '' : '/' . $path;
     }
 
     protected function getEndpointUrl(string $subdomain, string $endpoint): string
@@ -638,8 +638,8 @@ class Client
         } catch (ClientException $exception) {
             if (
                 $isRefreshed
-                || ! $this->tokenProvider instanceof RefreshableTokenProvider
-                || ! $this->tokenProvider->refresh($exception)
+                || !$this->tokenProvider instanceof RefreshableTokenProvider
+                || !$this->tokenProvider->refresh($exception)
             ) {
                 throw $this->determineException($exception);
             }
@@ -662,8 +662,8 @@ class Client
         } catch (ClientException $exception) {
             if (
                 $isRefreshed
-                || ! $this->tokenProvider instanceof RefreshableTokenProvider
-                || ! $this->tokenProvider->refresh($exception)
+                || !$this->tokenProvider instanceof RefreshableTokenProvider
+                || !$this->tokenProvider->refresh($exception)
             ) {
                 throw $this->determineException($exception);
             }
@@ -763,7 +763,100 @@ class Client
     protected function getHeadersForCredentials()
     {
         return [
-            'Authorization' => 'Basic '.base64_encode("{$this->appKey}:{$this->appSecret}"),
+            'Authorization' => 'Basic ' . base64_encode("{$this->appKey}:{$this->appSecret}"),
         ];
+    }
+
+    public function syncLocal(string $localPath, string $remotePath, bool $recursive = false, bool $delete = false)
+    {
+        $localPath = rtrim($localPath, '/');
+        $remotePath = rtrim($remotePath, '/');
+
+        if (file_exists($localPath) === false || is_dir($localPath) === false) {
+            throw new Exception('Local path not found');
+        }
+
+        $localFiles = $this->localFiles($localPath, $recursive);
+        $remoteFiles = $this->listFolder($remotePath, true);
+
+        if (isset($remoteFiles['entries']) && empty($remoteFiles['entries']) === false) {
+            $uploads = [];
+            $deletes = [];
+
+            foreach ($localFiles as $localFile) {
+                $localFileRelative = str_replace($localPath, '', $localFile);
+                $upload = true;
+
+                foreach ($remoteFiles['entries'] as $remoteFile) {
+
+                    if ($remoteFile['path_display'] == $remotePath . $localFileRelative) {
+                        $upload = false;
+
+                        break;
+                    }
+                }
+
+                if ($upload === true) {
+                    $uploads[$localFile] = $remotePath . $localFileRelative;
+                }
+            }
+
+            if ($delete === true) {
+                foreach ($remoteFiles['entries'] as $remoteFile) {
+                    if ($remoteFile['path_display'] == $remotePath) {
+                        continue;
+                    }
+
+                    $delete_file = true;
+
+                    foreach ($localFiles as $localFile) {
+                        $localFileRelative = str_replace($localPath, '', $localFile);
+
+                        if ($remoteFile['path_display'] == $remotePath . $localFileRelative) {
+                            $delete_file = false;
+
+                            break;
+                        }
+                    }
+
+                    if ($delete_file === true) {
+                        $deletes[] = $remoteFile['path_display'];
+                    }
+                }
+            }
+
+            foreach ($uploads as $absolutePath => $relativePath) {
+                if (is_file($absolutePath)) {
+                    $contents = file_get_contents($absolutePath);
+
+                    if (empty($contents) === false) {
+                        $this->upload($relativePath, $contents);
+                    }
+                } else if (is_dir($absolutePath)) {
+                    $this->createFolder($relativePath);
+                }
+            }
+
+            foreach ($deletes as $absolutePath => $relativePath) {
+                $this->delete($relativePath);
+            }
+        }
+
+        return true;
+    }
+
+    private function localFiles(string $path, bool $recursive = false)
+    {
+        $files = [];
+
+        foreach (glob($path . DIRECTORY_SEPARATOR . '*') as $file) {
+            if (is_file($file)) {
+                $files[] = $file;
+            } else if (is_dir($file) && $recursive === true) {
+                $files = array_merge($files, [$file], $this->localFiles($file));
+            }
+        }
+
+        return $files;
     }
 }
