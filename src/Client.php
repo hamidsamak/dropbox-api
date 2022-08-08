@@ -782,15 +782,19 @@ class Client
         if (isset($remoteFiles['entries'])) {
             $uploads = [];
             $deletes = [];
+            $deletes_before_upload = [];
 
             foreach ($localFiles as $localFile) {
                 $localFileRelative = str_replace($localPath, '', $localFile);
                 $upload = true;
 
                 foreach ($remoteFiles['entries'] as $remoteFile) {
-
                     if ($remoteFile['path_display'] == $remotePath . $localFileRelative) {
-                        $upload = false;
+                        if (isset($remoteFile['size']) === false || ($remoteFile['size'] == filesize($localFile))) {
+                            $upload = false;
+                        } else {
+                            $deletes_before_upload[] = $remotePath . $localFileRelative;
+                        }
 
                         break;
                     }
@@ -830,6 +834,10 @@ class Client
                     $contents = file_get_contents($absolutePath);
 
                     if (empty($contents) === false) {
+                        if (in_array($relativePath, $deletes_before_upload)) {
+                            $this->delete($relativePath);
+                        }
+
                         $this->upload($relativePath, $contents);
                     }
                 } else if (is_dir($absolutePath)) {
